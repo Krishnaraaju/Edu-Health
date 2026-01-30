@@ -28,7 +28,15 @@ const chatLimiter = rateLimit({
  * @desc    Send message and get response
  * @access  Private
  */
-router.post('/', authenticate, chatLimiter, chatValidation, chatController.sendMessage);
+// Debug logging middleware
+const debugRequest = (req, res, next) => {
+    console.log('[CHAT] Request body:', JSON.stringify(req.body));
+    console.log('[CHAT] Content-Type:', req.get('Content-Type'));
+    console.log('[CHAT] User ID:', req.userId);
+    next();
+};
+
+router.post('/', authenticate, chatLimiter, debugRequest, chatController.sendMessage);
 
 /**
  * @route   GET /api/chat

@@ -146,6 +146,55 @@ const callRemoteLLM = async (prompt, options = {}) => {
 };
 
 /**
+ * Call Groq LLM API (FREE and FAST!)
+ * Get API key at: https://console.groq.com
+ * @param {string} prompt - User prompt
+ * @param {Object} options - API options
+ * @returns {Promise<string>} LLM response
+ */
+const callGroqLLM = async (prompt, options = {}) => {
+    const {
+        systemPrompt = SYSTEM_PROMPTS.assistant,
+        model = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+        maxTokens = 500,
+        temperature = 0.7
+    } = options;
+
+    const apiKey = process.env.GROQ_API_KEY;
+
+    if (!apiKey) {
+        throw new Error('Groq API key not configured');
+    }
+
+    try {
+        const response = await axios.post(
+            'https://api.groq.com/openai/v1/chat/completions',
+            {
+                model,
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: prompt }
+                ],
+                max_tokens: maxTokens,
+                temperature
+            },
+            {
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json'
+                },
+                timeout: 30000
+            }
+        );
+
+        return response.data.choices[0].message.content;
+    } catch (error) {
+        console.error('Groq LLM error:', error.response?.data || error.message);
+        throw new Error('Failed to get response from Groq');
+    }
+};
+
+/**
  * Call local LLM (placeholder for on-device model)
  * @param {string} prompt - User prompt
  * @param {Object} options - Options
@@ -180,41 +229,50 @@ const callLocalLLM = async (prompt, options = {}) => {
 };
 
 /**
- * Main LLM call function with fallback
+ * Main LLM call function with fallback chain
+ * Priority: Groq (free) -> OpenAI -> Local -> Fallback
  * @param {string} prompt - User prompt
  * @param {Object} options - Options including provider preference
  * @returns {Promise<Object>} Response with text and metadata
  */
 const callLLM = async (prompt, options = {}) => {
-    const { provider = process.env.LLM_PROVIDER || 'openai', userMessage = '' } = options;
+    const { provider = process.env.LLM_PROVIDER || 'groq', userMessage = '' } = options;
 
     let response;
     let usedProvider;
 
-    // Try local first if enabled
+    // Try providers in order based on configuration
+    const providers = [];
+
+    if (provider === 'groq' || process.env.GROQ_API_KEY) {
+        providers.push({ name: 'groq', fn: callGroqLLM });
+    }
+    if (provider === 'openai' || process.env.OPENAI_API_KEY) {
+        providers.push({ name: 'openai', fn: callRemoteLLM });
+    }
     if (provider === 'local' || process.env.LOCAL_LLM_ENABLED === 'true') {
+        providers.push({ name: 'local', fn: callLocalLLM });
+    }
+
+    // Try each provider in order
+    for (const { name, fn } of providers) {
         try {
-            response = await callLocalLLM(prompt, options);
-            usedProvider = 'local';
+            response = await fn(prompt, options);
+            usedProvider = name;
+            break;
         } catch (error) {
-            console.log('Local LLM unavailable, falling back to remote');
+            console.log(`${name} LLM unavailable: ${error.message}`);
         }
     }
 
-    // Fall back to remote
+    // Return fallback if all providers fail
     if (!response) {
-        try {
-            response = await callRemoteLLM(prompt, options);
-            usedProvider = 'remote';
-        } catch (error) {
-            // Return fallback response if all LLMs fail
-            return {
-                text: "I apologize, but I'm unable to process your request at the moment. Please try again later or consult a healthcare professional for health-related questions.",
-                provider: 'fallback',
-                hasDisclaimer: true,
-                isEmergency: false
-            };
-        }
+        return {
+            text: "I apologize, but I'm unable to process your request at the moment. Please try again later or consult a healthcare professional for health-related questions.\n\n⚠️ **Tip**: For emergencies, call 112 (India) immediately.",
+            provider: 'fallback',
+            hasDisclaimer: true,
+            isEmergency: false
+        };
     }
 
     // Check for health content and emergencies
@@ -268,6 +326,7 @@ const moderateWithLLM = async (text) => {
 module.exports = {
     callLLM,
     callRemoteLLM,
+    callGroqLLM,
     callLocalLLM,
     moderateWithLLM,
     buildUserPrompt,
