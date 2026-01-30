@@ -16,12 +16,27 @@ const sendMessage = asyncHandler(async (req, res) => {
     const { message, conversationId, context } = req.body;
     const userId = req.userId;
 
-    // Step 1: Moderate user input
-    const moderationResult = await moderate(message, {
-        userId,
-        conversationId,
-        useLLM: process.env.MODERATION_STRICT_MODE === 'true'
-    });
+    // Validate message exists
+    if (!message || typeof message !== 'string' || !message.trim()) {
+        return res.status(400).json({
+            success: false,
+            message: 'Message is required',
+            errors: [{ field: 'message', message: 'Message is required' }]
+        });
+    }
+
+    // Step 1: Moderate user input (with error handling)
+    let moderationResult = { action: 'ALLOW', reasons: [] };
+    try {
+        moderationResult = await moderate(message, {
+            userId,
+            conversationId,
+            useLLM: process.env.MODERATION_STRICT_MODE === 'true'
+        });
+    } catch (modError) {
+        console.error('Moderation error:', modError.message);
+        // Continue with ALLOW if moderation fails
+    }
 
     if (moderationResult.action === 'DENY') {
         return res.status(400).json({
