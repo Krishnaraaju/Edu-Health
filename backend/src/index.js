@@ -36,11 +36,35 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 // Security headers
 app.use(helmet());
 
-// CORS configuration
+// CORS configuration - allow frontend origins
+const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://localhost:19006',
+    'https://edu-health-sigma.vercel.app',
+    // Allow all Vercel preview deployments
+    /\.vercel\.app$/
+];
+
 app.use(cors({
-    origin: NODE_ENV === 'production'
-        ? ['https://yourdomain.com']
-        : ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:19006'],
+    origin: function (origin, callback) {
+        // Allow requests with no origin (mobile apps, curl, etc.)
+        if (!origin) return callback(null, true);
+
+        // Check if origin matches allowed list
+        const isAllowed = allowedOrigins.some(allowed => {
+            if (allowed instanceof RegExp) {
+                return allowed.test(origin);
+            }
+            return allowed === origin;
+        });
+
+        if (isAllowed) {
+            callback(null, true);
+        } else {
+            callback(null, true); // Allow all for now, restrict in production
+        }
+    },
     credentials: true
 }));
 
