@@ -33,6 +33,9 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 // Middleware Setup
 // ===================
 
+// Trust proxy (required for Render, Heroku, etc.)
+app.set('trust proxy', 1);
+
 // Security headers
 app.use(helmet());
 
@@ -84,13 +87,15 @@ app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 // Global rate limiting
 const globalLimiter = rateLimit({
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
-    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
+    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 500, // Increased for production
     message: {
         success: false,
         message: 'Too many requests, please try again later'
     },
     standardHeaders: true,
-    legacyHeaders: false
+    legacyHeaders: false,
+    // Skip rate limiting for health checks
+    skip: (req) => req.path === '/health'
 });
 app.use(globalLimiter);
 
