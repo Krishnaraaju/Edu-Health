@@ -1,0 +1,39 @@
+{
+    "name": "healthcare-web",
+    "version": "1.0.0",
+    "description": "Privacy-first Health & Education Assistant - Web PWA",
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "preview": "vite preview",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "lint": "eslint src --ext js,jsx"
+    },
+    "dependencies": {
+        "axios": "^1.6.2",
+        "i18next": "^23.7.11",
+        "i18next-browser-languagedetector": "^7.2.0",
+        "localforage": "^1.10.0",
+        "react": "^18.2.0",
+        "react-dom": "^18.2.0",
+        "react-i18next": "^14.0.0",
+        "react-markdown": "^9.0.1",
+        "react-router-dom": "^6.21.1"
+    },
+    "devDependencies": {
+        "@testing-library/jest-dom": "^6.2.0",
+        "@testing-library/react": "^14.1.2",
+        "@types/react": "^18.2.45",
+        "@types/react-dom": "^18.2.18",
+        "@vitejs/plugin-react": "^4.2.1",
+        "autoprefixer": "^10.4.16",
+        "jsdom": "^23.0.1",
+        "postcss": "^8.4.32",
+        "tailwindcss": "^3.4.0",
+        "vite": "^5.0.10",
+        "vite-plugin-pwa": "^0.17.4",
+        "vitest": "^1.1.1"
+    }
+}

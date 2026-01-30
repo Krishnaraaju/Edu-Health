@@ -1,0 +1,30 @@
+# Render deployment configuration
+services:
+  - type: web
+    name: healthcare-api
+    env: node
+    region: singapore
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node src/index.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: JWT_EXPIRES_IN
+        value: 1h
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+      - key: MODERATION_ENABLED
+        value: true
+      - key: RATE_LIMIT_WINDOW_MS
+        value: 900000
+      - key: RATE_LIMIT_MAX
+        value: 100
+      # Set these manually in Render dashboard:
+      # - MONGODB_URI
+      # - JWT_SECRET
+      # - OPENAI_API_KEY
